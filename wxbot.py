@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# coding: utf-8
+# -*- coding: utf-8 -*-
 
 import os
 import sys
@@ -19,7 +19,7 @@ import HTMLParser
 
 UNKONWN = 'unkonwn'
 SUCCESS = '200'
-SCANED  = '201'
+SCANED = '201'
 TIMEOUT = '408'
 
 
@@ -38,6 +38,7 @@ def show_image(file_path):
         os.system(command)
     else:
         webbrowser.open(file_path)
+
 
 class SafeSession(requests.Session):
     def request(self, method, url, params=None, data=None, headers=None, cookies=None, files=None, auth=None,
@@ -137,23 +138,27 @@ class WXBot:
             if contact['VerifyFlag'] & 8 != 0:  # 公众号
                 self.public_list.append(contact)
                 self.account_info['normal_member'][contact['UserName']] = {'type': 'public', 'info': contact}
+                print '公众号', contact['NickName']
             elif contact['UserName'] in special_users:  # 特殊账户
                 self.special_list.append(contact)
                 self.account_info['normal_member'][contact['UserName']] = {'type': 'special', 'info': contact}
             elif contact['UserName'].find('@@') != -1:  # 群聊
                 self.group_list.append(contact)
                 self.account_info['normal_member'][contact['UserName']] = {'type': 'group', 'info': contact}
+                print '群聊', contact['NickName']
             elif contact['UserName'] == self.my_account['UserName']:  # 自己
                 self.account_info['normal_member'][contact['UserName']] = {'type': 'self', 'info': contact}
             else:
                 self.contact_list.append(contact)
                 self.account_info['normal_member'][contact['UserName']] = {'type': 'contact', 'info': contact}
+                print '联系人', contact['NickName']
 
         self.batch_get_group_members()
 
         for group in self.group_members:
             for member in self.group_members[group]:
                 if member['UserName'] not in self.account_info:
+                    print '群聊成员', member['NickName']
                     self.account_info['group_member'][member['UserName']] = \
                         {'type': 'group_member', 'info': member, 'group': group}
 
@@ -229,7 +234,6 @@ class WXBot:
         else:
             return None
 
-
     def get_contact_name(self, uid):
         info = self.get_contact_info(uid)
         if info is None:
@@ -246,7 +250,6 @@ class WXBot:
             return None
         else:
             return name
-
 
 
 
@@ -337,7 +340,7 @@ class WXBot:
         str_msg = ''
         infos = []
         if len(segs) > 1:
-            for i in range(0, len(segs)-1):
+            for i in range(0, len(segs) - 1):
                 segs[i] += u'\u2005'
                 pm = re.search(u'@.*\u2005', segs[i]).group()
                 if pm:
@@ -394,13 +397,13 @@ class WXBot:
             uid = content[:sp]
             content = content[sp:]
             content = content.replace('<br/>', '')
-            uid = uid[:-1]
-            name = self.get_contact_prefer_name(self.get_contact_name(uid))
-            if not name:
-                name = self.get_group_member_prefer_name(self.get_group_member_name(uid, msg['FromUserName']))
-            if not name:
-                name = 'unknown'
-            msg_content['user'] = {'id': uid, 'name': name}
+            # uid = uid[:-1]
+            # name = self.get_contact_prefer_name(self.get_contact_name(uid))
+            # if not name:
+            #     name = self.get_group_member_prefer_name(self.get_group_member_name(uid, msg['FromUserName']))
+            # if not name:
+            #     name = 'unknown'
+            # msg_content['user'] = {'id': uid, 'name': name}
         else:  # Self, Contact, Special, Public, Unknown
             pass
 
@@ -550,7 +553,7 @@ class WXBot:
                 user['name'] = 'file_helper'
             elif msg['FromUserName'][:2] == '@@':  # Group
                 msg_type_id = 3
-                user['name'] = self.get_contact_prefer_name(self.get_contact_name(user['id']))
+                # user['name'] = self.get_contact_prefer_name(self.get_contact_name(user['id']))
             elif self.is_contact(msg['FromUserName']):  # Contact
                 msg_type_id = 4
                 user['name'] = self.get_contact_prefer_name(self.get_contact_name(user['id']))
@@ -719,7 +722,7 @@ class WXBot:
 
         result = self.wait4login()
         if result != SUCCESS:
-            print '[ERROR] Web WeChat login failed. failed code=%s'%(result, )
+            print '[ERROR] Web WeChat login failed. failed code=%s' % (result,)
             return
 
         if self.login():
@@ -761,13 +764,13 @@ class WXBot:
     def gen_qr_code(self, qr_file_path):
         string = 'https://login.weixin.qq.com/l/' + self.uuid
         qr = pyqrcode.create(string)
-        if self.conf['qr'] == 'png':
-            qr.png(qr_file_path, scale=8)
-            show_image(qr_file_path)
-            # img = Image.open(qr_file_path)
-            # img.show()
-        elif self.conf['qr'] == 'tty':
-            print(qr.terminal(quiet_zone=1))
+        # if self.conf['qr'] == 'png':
+        #     qr.png(qr_file_path, scale=8)
+        #     show_image(qr_file_path)
+        #     # img = Image.open(qr_file_path)
+        #     # img.show()
+        # elif self.conf['qr'] == 'tty':
+        print(qr.terminal(module_color=256, background=123, quiet_zone=1))
 
     def do_request(self, url):
         r = self.session.get(url)
@@ -808,14 +811,14 @@ class WXBot:
                 self.base_uri = redirect_uri[:redirect_uri.rfind('/')]
                 return code
             elif code == TIMEOUT:
-                print '[ERROR] WeChat login timeout. retry in %s secs later...'%(try_later_secs, )
+                print '[ERROR] WeChat login timeout. retry in %s secs later...' % (try_later_secs,)
 
-                tip = 1 # 重置
+                tip = 1  # 重置
                 retry_time -= 1
                 time.sleep(try_later_secs)
             else:
                 print ('[ERROR] WeChat login exception return_code=%s. retry in %s secs later...' %
-                        (code, try_later_secs))
+                       (code, try_later_secs))
                 tip = 1
                 retry_time -= 1
                 time.sleep(try_later_secs)
@@ -941,7 +944,8 @@ class WXBot:
         if gid is None:
             url = self.base_uri + '/webwxgeticon?username=%s&skey=%s' % (uid, self.skey)
         else:
-            url = self.base_uri + '/webwxgeticon?username=%s&skey=%s&chatroomid=%s' % (uid, self.skey, self.encry_chat_room_id_list[gid])
+            url = self.base_uri + '/webwxgeticon?username=%s&skey=%s&chatroomid=%s' % (
+                uid, self.skey, self.encry_chat_room_id_list[gid])
         r = self.session.get(url)
         data = r.content
         fn = 'icon_' + uid + '.jpg'
